@@ -12,6 +12,14 @@ on:
 jobs:
   BuildPackage:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service:
+          - pool
+          - job-declaration-client
+          - job-declaration-server
+          - template-provider
+          - translator
     steps:
       - name: Prepare StartOS SDK
         uses: start9labs/sdk@v2
@@ -23,6 +31,7 @@ jobs:
 
       - name: Build the service package
         id: build
+        working-directory: ${{ matrix.service }}
         run: |
           start-cli init
           RUST_LOG=debug RUST_BACKTRACE=1 make
@@ -34,5 +43,5 @@ jobs:
       - name: Upload .s9pk
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ env.package_id }}.s9pk
-          path: ./${{ env.package_id }}.s9pk
+          name: ${{ matrix.service }}-${{ env.package_id }}.s9pk
+          path: ${{ matrix.service }}/${{ env.package_id }}.s9pk

@@ -10,6 +10,14 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    strategy:
+      matrix:
+        service:
+          - pool
+          - job-declaration-client
+          - job-declaration-server
+          - template-provider
+          - translator
     steps:
       - name: Prepare StartOS SDK
         uses: start9labs/sdk@v2
@@ -21,6 +29,7 @@ jobs:
 
       - name: Build the service package
         id: build
+        working-directory: ${{ matrix.service }}
         env:
           S9DEVKEY: ${{ secrets.S9DEVKEY }}
         run: |
@@ -42,15 +51,17 @@ jobs:
         shell: bash
 
       - name: Generate sha256 checksum
+        working-directory: ${{ matrix.service }}
         run: |
           sha256sum ${{ env.package_id }}.s9pk > ${{ env.package_id }}.s9pk.sha256
         shell: bash
 
       - name: Generate changelog
+        working-directory: ${{ matrix.service }}
         run: |
           echo "## What's Changed" > change-log.txt
           echo "" >> change-log.txt
-          RELEASE_NOTES=$(start-cli s9pk inspect *.s9pk manifest | jq -r '.releaseNotes') 
+          RELEASE_NOTES=$(start-cli s9pk inspect *.s9pk manifest | jq -r '.releaseNotes')
           echo "${RELEASE_NOTES}" >> change-log.txt
           echo "## SHA256 Hash" >> change-log.txt
           echo '```' >> change-log.txt
@@ -62,12 +73,12 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref_name }}
-          name: ${{ env.package_title }} ${{ github.ref_name }}
+          name: ${{ matrix.service }} - ${{ env.package_title }} ${{ github.ref_name }}
           prerelease: true
-          body_path: change-log.txt
+          body_path: ${{ matrix.service }}/change-log.txt
           files: |
-            ./${{ env.package_id }}.s9pk
-            ./${{ env.package_id }}.s9pk.sha256
+            ${{ matrix.service }}/${{ env.package_id }}.s9pk
+            ${{ matrix.service }}/${{ env.package_id }}.s9pk.sha256
 
       - name: Publish to Registry
         env:
@@ -78,6 +89,6 @@ jobs:
           echo "Publish skipped: One or both of S9DEVKEY and S9REGISTRY secrets are not set."
           else
           echo "Publishing package to registry..."
-          start-cli --registry https://$S9REGISTRY registry package add ${{ env.package_id }}.s9pk ${{ github.server_url }}/${{ github.repository }}/releases/download/${{ github.ref_name }}/${{ env.package_id }}.s9pk
+          start-cli --registry https://$S9REGISTRY registry package add ${{ matrix.service }}/${{ env.package_id }}.s9pk ${{ github.server_url }}/${{ github.repository }}/releases/download/${{ github.ref_name }}/${{ env.package_id }}.s9pk
           fi
         shell: bash
