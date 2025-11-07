@@ -9,9 +9,19 @@ export const main = sdk.setupMain(async ({ effects, started }) => {
    */
   console.info('Starting Pioneer Hash SV2 Pool!')
 
-  // watch the config.toml for changes and restart
-  // read(file => file.whatever) watches specific aspects of the file
-  await configToml.read().const(effects)
+  // Read and validate configuration
+  const config = await configToml.read().const(effects)
+
+  // Validate critical configuration fields before starting
+  const defaultTestnetAddress = 'addr(tb1qa0sm0hxzj0x25rh8gw5xlzwlsfvvyz8u96w3p8)'
+
+  if (!config.coinbase_reward_script || config.coinbase_reward_script === defaultTestnetAddress) {
+    throw new Error(
+      'Configuration Required: You must configure a Bitcoin address for mining rewards. ' +
+      'The default testnet address cannot be used. ' +
+      'Please run the "Configure Pool" action and enter your Bitcoin address where mining rewards should be sent.'
+    )
+  }
 
   /**
    * ======================== Daemons ========================

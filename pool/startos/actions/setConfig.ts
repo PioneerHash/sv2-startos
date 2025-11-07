@@ -4,98 +4,97 @@ import { configToml } from '../fileModels/config.toml'
 const { InputSpec, Value } = sdk
 
 export const inputSpec = InputSpec.of({
-  // Pool Authority Keys
-  authority_public_key: Value.text({
-    name: 'Authority Public Key',
-    description: 'Pool authority public key for SV2 protocol authentication',
-    required: true,
-    default: '9auqWEzQDVyd2oe1JVGFLMLHZtCo2FFqZwtKA5gd9xbuEu7PH72',
-    placeholder: '9auqWEzQDVyd2oe1JVGFLMLHZtCo2FFqZwtKA5gd9xbuEu7PH72',
-  }),
-  
-  authority_secret_key: Value.text({
-    name: 'Authority Secret Key',
-    description: 'Pool authority secret key (keep this secure!)',
-    required: true,
-    default: 'mkDLTBBRxdBv998612qipDYoTK3YUrqLe8uWw7gu3iXbSrn2n',
-    placeholder: 'mkDLTBBRxdBv998612qipDYoTK3YUrqLe8uWw7gu3iXbSrn2n',
-  }),
-  
-  // Certificate validity
+  // Certificate Configuration
   cert_validity_sec: Value.number({
-    name: 'Certificate Validity (seconds)',
-    description: 'Duration in seconds for certificate validity',
+    name: 'Certificate Validity Duration',
+    description: 'How long certificates are valid in seconds (1 hour = 3600, 1 day = 86400, 30 days = 2592000)',
     required: true,
     default: 3600,
     min: 300,
-    max: 86400,
+    max: 2592000,
     integer: true,
+    units: 'seconds',
   }),
-  
-  // Coinbase Configuration
-  coinbase_reward_script: Value.text({
-    name: 'Coinbase Reward Script',
-    description: 'Bitcoin address descriptor for coinbase rewards (e.g., addr(tb1q...))',
+
+  // Coinbase Reward Configuration
+  coinbase_reward_address: Value.text({
+    name: 'Bitcoin Reward Address',
+    description: 'Bitcoin address where mining rewards will be sent. Enter your Bitcoin address (e.g., bc1q... for mainnet or tb1q... for testnet). IMPORTANT: Verify this address carefully - all mining rewards will go here!',
     required: true,
-    default: 'addr(tb1qa0sm0hxzj0x25rh8gw5xlzwlsfvvyz8u96w3p8)',
-    placeholder: 'addr(tb1qa0sm0hxzj0x25rh8gw5xlzwlsfvvyz8u96w3p8)',
+    default: 'tb1qa0sm0hxzj0x25rh8gw5xlzwlsfvvyz8u96w3p8',
+    placeholder: 'bc1q...',
+    patterns: [
+      {
+        regex: '^[a-zA-Z0-9]{25,100}$',
+        description: 'Must be a valid Bitcoin address',
+      },
+    ],
   }),
-  
+
+  pool_signature: Value.text({
+    name: 'Pool Signature',
+    description: 'Identifying string included in the coinbase transaction of every block mined by your pool',
+    required: true,
+    default: 'PioneerHashSv2',
+    placeholder: 'PioneerHashSv2',
+    maxLength: 100,
+  }),
+
   // Server Configuration
   server_id: Value.number({
     name: 'Server ID',
-    description: 'Unique server ID to guarantee unique search space allocation',
+    description: 'Unique identifier for this pool server (1-65535). Each pool instance must have a unique ID to ensure unique search space allocation across multiple servers',
     required: true,
     default: 1,
     min: 1,
     max: 65535,
     integer: true,
   }),
-  
-  pool_signature: Value.text({
-    name: 'Pool Signature',
-    description: 'String to be included in coinbase transaction',
-    required: true,
-    default: 'Stratum V2 SRI Pool',
-    placeholder: 'Stratum V2 SRI Pool',
-  }),
-  
+
   // Template Provider Configuration
   tp_address: Value.text({
     name: 'Template Provider Address',
-    description: 'IP address and port of the Template Provider (e.g., 127.0.0.1:8442)',
+    description: 'IP address and port of the Template Provider service. Use 127.0.0.1:8442 if running locally on StartOS',
     required: true,
     default: '127.0.0.1:8442',
     placeholder: '127.0.0.1:8442',
+    patterns: [
+      {
+        regex: '^[^:]+:[0-9]+$',
+        description: 'Must be in format: address:port',
+      },
+    ],
   }),
-  
+
   tp_authority_public_key: Value.text({
     name: 'Template Provider Authority Public Key',
-    description: 'Authority public key of the Template Provider for authentication',
+    description: 'Authority public key of the Template Provider for secure authentication',
     required: true,
     default: '9bwHCYnjhbHm4AS3pWg9MtAH83mzWohoJJJDELYBqZhDNqszDLc',
     placeholder: '9bwHCYnjhbHm4AS3pWg9MtAH83mzWohoJJJDELYBqZhDNqszDLc',
   }),
-  
-  // Shares Configuration
+
+  // Mining Difficulty & Share Configuration
   shares_per_minute: Value.number({
     name: 'Target Shares Per Minute',
-    description: 'Target number of shares per minute',
+    description: 'Target number of shares per minute for difficulty adjustment. Higher values result in lower difficulty',
     required: true,
     default: 6.0,
     min: 0.1,
     max: 60,
     integer: false,
+    units: 'shares/min',
   }),
-  
+
   share_batch_size: Value.number({
     name: 'Share Batch Size',
-    description: 'Number of shares to batch before processing',
+    description: 'Number of shares to batch together before processing. Larger batches improve efficiency but increase memory usage',
     required: true,
-    default: 10,
+    default: 100,
     min: 1,
     max: 1000,
     integer: true,
+    units: 'shares',
   }),
 })
 
@@ -123,11 +122,32 @@ export const setConfig = sdk.Action.withInput(
     if (!config) {
       return null
     }
-    return config
+
+    // Unwrap addr() from coinbase_reward_script for display
+    let coinbase_reward_address = config.coinbase_reward_script
+    if (coinbase_reward_address && coinbase_reward_address.startsWith('addr(') && coinbase_reward_address.endsWith(')')) {
+      coinbase_reward_address = coinbase_reward_address.slice(5, -1)
+    }
+
+    return {
+      ...config,
+      coinbase_reward_address,
+    }
   },
 
   // the execution function
   async ({ effects, input }) => {
-    await configToml.merge(effects, input)
+    // Transform the user-friendly address input into the Bitcoin descriptor format
+    // Users enter just the address (e.g., "bc1q..."), we wrap it with addr() for storage
+    // This is stored as coinbase_reward_script in the config file
+    const configData = {
+      ...input,
+      coinbase_reward_script: `addr(${input.coinbase_reward_address})`,
+    }
+
+    // Remove the temporary UI field that doesn't exist in the config file
+    delete configData.coinbase_reward_address
+
+    await configToml.merge(effects, configData)
   },
 )

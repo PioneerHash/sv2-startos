@@ -2,7 +2,7 @@ import { sdk } from './sdk'
 import { DOWNSTREAM_PORT } from './utils'
 
 export const setInterfaces = sdk.setupInterfaces(async ({ effects }) => {
-  // Pioneer Hash TProxy exposes a TCP interface for mining devices
+  // Pioneer Hash SV2 Pool exposes a TCP interface for translators/proxies
   const downstreamMulti = sdk.MultiHost.of(effects, 'downstream-multi')
   const downstreamMultiOrigin = await downstreamMulti.bindPort(DOWNSTREAM_PORT, {
     protocol: null,
@@ -11,9 +11,9 @@ export const setInterfaces = sdk.setupInterfaces(async ({ effects }) => {
     secure: { ssl: false }
   })
   const downstreamInterface = sdk.createInterface(effects, {
-    name: 'Pioneer Hash Sv1 Mining',
-    id: 'translator-mining',
-    description: 'Mining interface for connecting SV1 mining devices',
+    name: 'Pioneer Hash SV2 Pool',
+    id: 'pool-sv2',
+    description: 'SV2 pool interface',
     type: 'api',
     masked: false,
     schemeOverride: null,
