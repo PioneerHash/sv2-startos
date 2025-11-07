@@ -10,49 +10,42 @@ export const versionGraph = VersionGraph.of({
   preInstall: async (effects) => {
     ;(await Promise.all([
       configToml.write(effects, {
-        // Downstream Mining Device Connection
-        downstream_address: '0.0.0.0',
-        downstream_port: 34255,
+        // Pool Authority Keys (to be configured by user)
+        authority_public_key: 'PLACEHOLDER_PUBLIC_KEY',
+        authority_secret_key: 'PLACEHOLDER_SECRET_KEY',
 
-        // Protocol Version Support
-        min_supported_version: 2,
-        max_supported_version: 2,
+        // Certificate validity duration (30 days)
+        cert_validity_sec: 2592000,
 
-        // Extranonce Configuration
-        downstream_extranonce2_size: 4,
+        // Listen address for downstream connections
+        listen_address: '0.0.0.0:34254',
 
-        // User Identity
-        user_identity: 'start9',
+        // Coinbase reward script (to be configured by user)
+        coinbase_reward_script: 'PLACEHOLDER_BITCOIN_ADDRESS',
 
-        // Channel Aggregation
-        aggregate_channels: true,
+        // Server ID for unique search space allocation
+        server_id: 0,
+
+        // Pool signature for coinbase tx
+        pool_signature: 'start9',
 
         // Log File
-        log_file: './tproxy.log',
+        log_file: './pool.log',
 
-        // Downstream Difficulty Configuration
-        downstream_difficulty_config: {
-          min_individual_miner_hashrate: 10000000000000,
-          shares_per_minute: 6.0,
-          enable_vardiff: true,
-        },
+        // Template Provider Configuration
+        tp_address: '127.0.0.1:8442',
+        tp_authority_public_key: 'PLACEHOLDER_TP_PUBKEY',
 
-        // Upstream SV2 Pool/JDC Connections
-        upstreams: [
-          {
-            address: '75.119.150.111',
-            port: 34254,
-            authority_pubkey:
-              '9auqWEzQDVyd2oe1JVGFLMLHZtCo2FFqZwtKA5gd9xbuEu7PH72',
-          },
-        ],
+        // Shares configuration
+        shares_per_minute: 6.0,
+        share_batch_size: 100,
       }),
     ]),
       // critical - needs to be done before start
       // important - dismissible
       // optional - less in the user's face
       await sdk.action.createOwnTask(effects, setConfig, 'critical', {
-        reason: 'Configure your SV2 Translator Proxy settings',
+        reason: 'Configure your SV2 Pool settings',
       }))
   },
 })
