@@ -1,45 +1,52 @@
 import { matches, FileHelper } from '@start9labs/start-sdk'
-const { object, string, number, literal, boolean, array } = matches
+const { object, string, number, literal, array, optional } = matches
 
 const shape = object({
-  // Downstream Mining Device Connection
-  // We don't want people changing Downstream address and port
-  downstream_address: literal('0.0.0.0').onMismatch('0.0.0.0'),
-  downstream_port: literal(34255).onMismatch(34255),
+  // JD Client listening address - fixed
+  listening_address: literal('0.0.0.0:34265').onMismatch('0.0.0.0:34265'),
 
-  // Protocol Version Support
-  // We don't want people changing protocol versions
+  // Protocol Version Support - fixed
   min_supported_version: literal(2).onMismatch(2),
   max_supported_version: literal(2).onMismatch(2),
 
-  // Extranonce2 size for downstream connections
-  // This controls the rollable part of the extranonce for downstream SV1 miners
-  // Max value for CGminer: 8, Min value: 2
-  downstream_extranonce2_size: number,
+  // Auth keys for open encrypted connection downstream
+  authority_public_key: string,
+  authority_secret_key: string,
+  cert_validity_sec: number,
 
   // User identity/username for pool connection
-  // This will be appended with a counter for each mining client (e.g., username.miner1, username.miner2)
   user_identity: string,
 
-  // Aggregate channels: if true, all miners share one upstream channel; if false, each miner gets its own channel
-  aggregate_channels: boolean,
+  // Target number of shares per minute applied to every downstream channel
+  shares_per_minute: number,
+
+  // Share batch size
+  share_batch_size: number,
+
+  // JDC supports two modes: "FULLTEMPLATE" - full template mining, "COINBASEONLY" - coinbase-only mining
+  mode: string,
+
+  // Template Provider config
+  tp_address: string,
+  // Optional: only needed for remote/hosted Template Providers
+  tp_authority_public_key: optional(string),
+
+  // String to be added into the Coinbase scriptSig
+  jdc_signature: string,
+
+  // Coinbase reward script for Solo Mining (fallback solution)
+  coinbase_reward_script: string,
 
   // Optional Log File
-  log_file: literal('./tproxy.log').onMismatch('./tproxy.log'),
+  log_file: literal('./jd-client.log').onMismatch('./jd-client.log'),
 
-  // Downstream Difficulty Configuration
-  downstream_difficulty_config: object({
-    min_individual_miner_hashrate: number,
-    shares_per_minute: number,
-    // Enable variable difficulty adjustment (true by default, set to false when using with JDC)
-    enable_vardiff: boolean,
-  }),
-
-  // Upstream SV2 Pool/JDC Connections (array of upstreams for failover support)
+  // List of upstreams (JDS) used as backup endpoints
   upstreams: array(object({
-    address: string,
-    port: number,
     authority_pubkey: string,
+    pool_address: string,
+    pool_port: string,
+    jds_address: string,
+    jds_port: string,
   })),
 })
 
