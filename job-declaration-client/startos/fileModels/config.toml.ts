@@ -1,5 +1,5 @@
 import { matches, FileHelper } from '@start9labs/start-sdk'
-const { object, string, number, literal, array, optional } = matches
+const { object, string, number, literal, array } = matches
 
 const shape = object({
   // JD Client listening address - fixed
@@ -28,8 +28,8 @@ const shape = object({
 
   // Template Provider config
   tp_address: string,
-  // Optional: only needed for remote/hosted Template Providers
-  tp_authority_public_key: optional(string),
+  // Optional: only needed for remote/hosted Template Providers (can be empty string)
+  tp_authority_public_key: string,
 
   // String to be added into the Coinbase scriptSig
   jdc_signature: string,

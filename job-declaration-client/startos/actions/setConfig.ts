@@ -4,29 +4,40 @@ import { configToml } from '../fileModels/config.toml'
 const { InputSpec, Value, List } = sdk
 
 const upstreamSpec = InputSpec.of({
-  address: Value.text({
-    name: 'Pool Address',
-    description: 'IP address or hostname of the upstream SV2 pool',
-    required: true,
-    default: '75.119.150.111',
-    placeholder: '75.119.150.111',
-  }),
-  port: Value.number({
-    name: 'Pool Port',
-    description:
-      'Port number for the upstream SV2 pool (typically 34254 for pool, 34265 for JDC)',
-    required: true,
-    default: 34254,
-    min: 1,
-    max: 65535,
-    integer: true,
-  }),
   authority_pubkey: Value.text({
-    name: 'Authority Public Key',
-    description: 'The authority public key of the upstream SV2 pool',
+    name: 'JDS Authority Public Key',
+    description: 'The authority public key of the Job Declaration Server',
     required: true,
     default: '9auqWEzQDVyd2oe1JVGFLMLHZtCo2FFqZwtKA5gd9xbuEu7PH72',
     placeholder: '9auqWEzQDVyd2oe1JVGFLMLHZtCo2FFqZwtKA5gd9xbuEu7PH72',
+  }),
+  pool_address: Value.text({
+    name: 'Pool Address',
+    description: 'IP address or hostname of the upstream SV2 pool',
+    required: true,
+    default: '127.0.0.1',
+    placeholder: '127.0.0.1',
+  }),
+  pool_port: Value.text({
+    name: 'Pool Port',
+    description: 'Port number for the upstream SV2 pool (typically 34254)',
+    required: true,
+    default: '34254',
+    placeholder: '34254',
+  }),
+  jds_address: Value.text({
+    name: 'JDS Address',
+    description: 'IP address or hostname of the Job Declaration Server',
+    required: true,
+    default: '127.0.0.1',
+    placeholder: '127.0.0.1',
+  }),
+  jds_port: Value.text({
+    name: 'JDS Port',
+    description: 'Port number for the Job Declaration Server (typically 34264)',
+    required: true,
+    default: '34264',
+    placeholder: '34264',
   }),
 })
 
@@ -34,81 +45,125 @@ export const inputSpec = InputSpec.of({
   // User Identity
   user_identity: Value.text({
     name: 'User Identity / Username',
-    description:
-      'Username for pool connection. Will be appended with a counter for each mining client (e.g., username.miner1, username.miner2)',
+    description: 'Username for pool connection',
     required: true,
     default: 'start9',
     placeholder: 'start9',
   }),
 
-  // Extranonce Configuration
-  downstream_extranonce2_size: Value.number({
-    name: 'Downstream Extranonce2 Size',
+  // Shares Configuration
+  shares_per_minute: Value.number({
+    name: 'Target Shares Per Minute',
     description:
-      'Extranonce2 size for downstream connections. Controls the rollable part of the extranonce for downstream SV1 miners (Max for CGminer: 8, Min: 2)',
+      'Target number of shares per minute applied to every downstream channel',
     required: true,
-    default: 4,
-    min: 2,
-    max: 16,
+    default: 6.0,
+    min: 0.1,
+    max: 60,
+    integer: false,
+    units: 'shares/min',
+  }),
+
+  share_batch_size: Value.number({
+    name: 'Share Batch Size',
+    description: 'Number of shares to batch before submitting',
+    required: true,
+    default: 10,
+    min: 1,
+    max: 1000,
     integer: true,
+    units: 'shares',
   }),
 
-  // Channel Aggregation
-  aggregate_channels: Value.toggle({
-    name: 'Aggregate Channels',
+  // Mining Mode
+  mode: Value.text({
+    name: 'Mining Mode',
     description:
-      'If enabled, all miners share one upstream channel. If disabled, each miner gets its own channel',
-    default: true,
+      'FULLTEMPLATE for full template mining (requires Template Provider), COINBASEONLY for coinbase-only mining',
+    required: true,
+    default: 'FULLTEMPLATE',
+    placeholder: 'FULLTEMPLATE',
   }),
 
-  // Downstream Difficulty Configuration
-  downstream_difficulty_config: Value.object(
-    {
-      name: 'Downstream Difficulty Settings',
-      description: 'Difficulty settings for mining devices',
-    },
-    InputSpec.of({
-      min_individual_miner_hashrate: Value.number({
-        name: 'Minimum Miner Hashrate (TH/s)',
-        description:
-          'Hashrate of the weakest miner in terahashes per second (e.g., 10 TH/s)',
-        required: true,
-        default: 10,
-        min: 0.001,
-        max: 10000,
-        integer: false,
-      }),
-      shares_per_minute: Value.number({
-        name: 'Target Shares Per Minute',
-        description:
-          'Target number of shares per minute each miner should submit',
-        required: true,
-        default: 6.0,
-        min: 0.1,
-        max: 60,
-        integer: false,
-      }),
-      enable_vardiff: Value.toggle({
-        name: 'Enable Variable Difficulty',
-        description:
-          'Enable variable difficulty adjustment (set to false when using with Job Declarator Client)',
-        default: true,
-      }),
-    }),
-  ),
+  // Template Provider Configuration
+  tp_address: Value.text({
+    name: 'Template Provider Address',
+    description:
+      'Address of the Template Provider (required for FULLTEMPLATE mode)',
+    required: true,
+    default: '127.0.0.1:8442',
+    placeholder: '127.0.0.1:8442',
+  }),
 
-  // Upstream SV2 Pool/JDC Connections
+  tp_authority_public_key: Value.text({
+    name: 'Template Provider Authority Public Key',
+    description:
+      'Authority public key of the Template Provider (leave empty for local TP, required for remote/hosted Template Providers)',
+    required: false,
+    default: '',
+    placeholder: '9bwHCYnjhbHm4AS3pWg9MtAH83mzWohoJJJDELYBqZhDNqszDLc',
+  }),
+
+  // JDC Signature
+  jdc_signature: Value.text({
+    name: 'JDC Signature',
+    description: 'String to be added into the Coinbase scriptSig',
+    required: true,
+    default: 'StartOS',
+    placeholder: 'StartOS',
+    maxLength: 100,
+  }),
+
+  // Solo Mining Fallback
+  coinbase_reward_script: Value.text({
+    name: 'Coinbase Reward Script',
+    description:
+      'Bitcoin address descriptor for solo mining fallback. Use format: addr(your_address). Example testnet address provided - replace with your own!',
+    required: true,
+    default: 'addr(tb1qa0sm0hxzj0x25rh8gw5xlzwlsfvvyz8u96w3p8)',
+    placeholder: 'addr(bc1q...)',
+  }),
+
+  // Authority Keys
+  authority_public_key: Value.text({
+    name: 'Authority Public Key',
+    description: 'Authority public key for authenticated connections (example key provided from sv2-apps)',
+    required: true,
+    default: '9auqWEzQDVyd2oe1JVGFLMLHZtCo2FFqZwtKA5gd9xbuEu7PH72',
+    placeholder: '9auqWEzQDVyd2oe1JVGFLMLHZtCo2FFqZwtKA5gd9xbuEu7PH72',
+  }),
+
+  authority_secret_key: Value.text({
+    name: 'Authority Secret Key',
+    description: 'Authority secret key for authenticated connections (example key provided from sv2-apps)',
+    required: true,
+    default: 'mkDLTBBRxdBv998612qipDYoTK3YUrqLe8uWw7gu3iXbSrn2n',
+    placeholder: 'mkDLTBBRxdBv998612qipDYoTK3YUrqLe8uWw7gu3iXbSrn2n',
+  }),
+
+  cert_validity_sec: Value.number({
+    name: 'Certificate Validity',
+    description: 'Certificate validity duration in seconds',
+    required: true,
+    default: 3600,
+    min: 60,
+    max: 31536000,
+    integer: true,
+    units: 'seconds',
+  }),
+
+  // Upstream JDS Connections
   upstreams: Value.list(
     List.obj(
       {
-        name: 'Upstream Pools',
+        name: 'Upstream Job Declaration Servers',
         description:
-          'SV2 pool connections (add multiple for failover support). The first pool will be used as primary, others as backups',
+          'Job Declaration Server connections (add multiple for failover support). The first JDS will be used as primary, others as backups',
       },
       {
         spec: upstreamSpec,
-        displayAs: '{{address}}:{{port}}',
-        uniqueBy: 'address',
+        displayAs: '{{pool_address}}:{{pool_port}} via {{jds_address}}:{{jds_port}}',
+        uniqueBy: 'pool_address',
       },
     ),
   ),
@@ -120,9 +175,9 @@ export const setConfig = sdk.Action.withInput(
 
   // metadata
   async ({ effects }) => ({
-    name: 'Configure Translator',
+    name: 'Configure Job Declaration Client',
     description:
-      'Configure SV2 Translator Proxy settings for pool and mining device connections',
+      'Configure Job Declaration Client settings for pool connections and mining parameters',
     warning: null,
     allowedStatuses: 'any',
     group: null,
@@ -138,27 +193,20 @@ export const setConfig = sdk.Action.withInput(
     if (!config) {
       return null
     }
-    // Convert H/s to TH/s for display
-    return {
-      ...config,
-      downstream_difficulty_config: {
-        ...config.downstream_difficulty_config,
-        min_individual_miner_hashrate:
-          config.downstream_difficulty_config.min_individual_miner_hashrate / 1e12,
-      },
-    }
+    return config
   },
 
   // the execution function
   async ({ effects, input }) => {
-    // Convert TH/s to H/s for storage
     const configData = {
+      // Fixed values
+      listening_address: '0.0.0.0:34265' as const,
+      min_supported_version: 2 as const,
+      max_supported_version: 2 as const,
+      log_file: './jd-client.log' as const,
+
+      // User-configurable values
       ...input,
-      downstream_difficulty_config: {
-        ...input.downstream_difficulty_config,
-        min_individual_miner_hashrate:
-          input.downstream_difficulty_config.min_individual_miner_hashrate * 1e12,
-      },
     }
     await configToml.merge(effects, configData)
   },
