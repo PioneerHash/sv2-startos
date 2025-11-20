@@ -1,117 +1,96 @@
 import { sdk } from '../sdk'
 import { configToml } from '../fileModels/config.toml'
 
-const { InputSpec, Value, List } = sdk
+const { InputSpec, Value } = sdk
 
-const upstreamSpec = InputSpec.of({
-  address: Value.text({
-    name: 'Pool Address',
-    description: 'IP address or hostname of the upstream SV2 pool',
-    required: true,
-    default: '75.119.150.111',
-    placeholder: '75.119.150.111',
-  }),
-  port: Value.number({
-    name: 'Pool Port',
+export const inputSpec = InputSpec.of({
+  // Full Template Mode
+  full_template_mode_required: Value.toggle({
+    name: 'Full Template Mode Required',
     description:
-      'Port number for the upstream SV2 pool (typically 34254 for pool, 34265 for JDC)',
+      'If enabled, JDS requires Job Declaration Clients to reveal the transactions they are going to mine on',
+    default: false,
+  }),
+
+  // Authority Keys
+  authority_public_key: Value.text({
+    name: 'Authority Public Key',
+    description: 'Authority public key for the Job Declaration Server',
     required: true,
-    default: 34254,
+    placeholder: 'Enter authority public key',
+  }),
+
+  authority_secret_key: Value.text({
+    name: 'Authority Secret Key',
+    description: 'Authority secret key for the Job Declaration Server',
+    required: true,
+    placeholder: 'Enter authority secret key',
+    masked: true,
+  }),
+
+  cert_validity_sec: Value.number({
+    name: 'Certificate Validity (seconds)',
+    description: 'Duration in seconds for certificate validity',
+    required: true,
+    default: 3600,
+    min: 60,
+    max: 31536000, // 1 year
+    integer: true,
+  }),
+
+  // Coinbase Configuration
+  coinbase_reward_script: Value.text({
+    name: 'Coinbase Reward Script',
+    description:
+      'Bitcoin address descriptor for coinbase rewards (e.g., wpkh([fingerprint/derivation]xpub...))',
+    required: true,
+    placeholder: 'Enter Bitcoin address descriptor',
+  }),
+
+  // Bitcoin Core RPC Configuration
+  core_rpc_url: Value.text({
+    name: 'Bitcoin Core RPC URL',
+    description: 'URL for Bitcoin Core RPC connection',
+    required: true,
+    default: 'http://bitcoind.embassy:8332',
+    placeholder: 'http://bitcoind.embassy:8332',
+  }),
+
+  core_rpc_port: Value.number({
+    name: 'Bitcoin Core RPC Port',
+    description: 'Port number for Bitcoin Core RPC',
+    required: true,
+    default: 8332,
     min: 1,
     max: 65535,
     integer: true,
   }),
-  authority_pubkey: Value.text({
-    name: 'Authority Public Key',
-    description: 'The authority public key of the upstream SV2 pool',
-    required: true,
-    default: '9auqWEzQDVyd2oe1JVGFLMLHZtCo2FFqZwtKA5gd9xbuEu7PH72',
-    placeholder: '9auqWEzQDVyd2oe1JVGFLMLHZtCo2FFqZwtKA5gd9xbuEu7PH72',
-  }),
-})
 
-export const inputSpec = InputSpec.of({
-  // User Identity
-  user_identity: Value.text({
-    name: 'User Identity / Username',
-    description:
-      'Username for pool connection. Will be appended with a counter for each mining client (e.g., username.miner1, username.miner2)',
+  core_rpc_user: Value.text({
+    name: 'Bitcoin Core RPC Username',
+    description: 'Username for Bitcoin Core RPC authentication',
     required: true,
-    default: 'start9',
-    placeholder: 'start9',
+    placeholder: 'Enter RPC username',
   }),
 
-  // Extranonce Configuration
-  downstream_extranonce2_size: Value.number({
-    name: 'Downstream Extranonce2 Size',
-    description:
-      'Extranonce2 size for downstream connections. Controls the rollable part of the extranonce for downstream SV1 miners (Max for CGminer: 8, Min: 2)',
+  core_rpc_pass: Value.text({
+    name: 'Bitcoin Core RPC Password',
+    description: 'Password for Bitcoin Core RPC authentication',
     required: true,
-    default: 4,
-    min: 2,
-    max: 16,
+    placeholder: 'Enter RPC password',
+    masked: true,
+  }),
+
+  // Mempool Update Configuration
+  mempool_update_interval: Value.number({
+    name: 'Mempool Update Interval (seconds)',
+    description: 'Time interval in seconds for mempool updates',
+    required: true,
+    default: 30,
+    min: 1,
+    max: 3600,
     integer: true,
   }),
-
-  // Channel Aggregation
-  aggregate_channels: Value.toggle({
-    name: 'Aggregate Channels',
-    description:
-      'If enabled, all miners share one upstream channel. If disabled, each miner gets its own channel',
-    default: true,
-  }),
-
-  // Downstream Difficulty Configuration
-  downstream_difficulty_config: Value.object(
-    {
-      name: 'Downstream Difficulty Settings',
-      description: 'Difficulty settings for mining devices',
-    },
-    InputSpec.of({
-      min_individual_miner_hashrate: Value.number({
-        name: 'Minimum Miner Hashrate (TH/s)',
-        description:
-          'Hashrate of the weakest miner in terahashes per second (e.g., 10 TH/s)',
-        required: true,
-        default: 10,
-        min: 0.001,
-        max: 10000,
-        integer: false,
-      }),
-      shares_per_minute: Value.number({
-        name: 'Target Shares Per Minute',
-        description:
-          'Target number of shares per minute each miner should submit',
-        required: true,
-        default: 6.0,
-        min: 0.1,
-        max: 60,
-        integer: false,
-      }),
-      enable_vardiff: Value.toggle({
-        name: 'Enable Variable Difficulty',
-        description:
-          'Enable variable difficulty adjustment (set to false when using with Job Declarator Client)',
-        default: true,
-      }),
-    }),
-  ),
-
-  // Upstream SV2 Pool/JDC Connections
-  upstreams: Value.list(
-    List.obj(
-      {
-        name: 'Upstream Pools',
-        description:
-          'SV2 pool connections (add multiple for failover support). The first pool will be used as primary, others as backups',
-      },
-      {
-        spec: upstreamSpec,
-        displayAs: '{{address}}:{{port}}',
-        uniqueBy: 'address',
-      },
-    ),
-  ),
 })
 
 export const setConfig = sdk.Action.withInput(
@@ -120,9 +99,9 @@ export const setConfig = sdk.Action.withInput(
 
   // metadata
   async ({ effects }) => ({
-    name: 'Configure Translator',
+    name: 'Configure Job Declaration Server',
     description:
-      'Configure SV2 Translator Proxy settings for pool and mining device connections',
+      'Configure Job Declaration Server settings including authority keys, Bitcoin Core RPC, and mempool update intervals',
     warning: null,
     allowedStatuses: 'any',
     group: null,
@@ -138,26 +117,25 @@ export const setConfig = sdk.Action.withInput(
     if (!config) {
       return null
     }
-    // Convert H/s to TH/s for display
+    // Convert mempool_update_interval from object to number for display
     return {
       ...config,
-      downstream_difficulty_config: {
-        ...config.downstream_difficulty_config,
-        min_individual_miner_hashrate:
-          config.downstream_difficulty_config.min_individual_miner_hashrate / 1e12,
-      },
+      mempool_update_interval: config.mempool_update_interval.value,
     }
   },
 
   // the execution function
   async ({ effects, input }) => {
-    // Convert TH/s to H/s for storage
+    // Convert mempool_update_interval from number to object for storage
     const configData = {
       ...input,
-      downstream_difficulty_config: {
-        ...input.downstream_difficulty_config,
-        min_individual_miner_hashrate:
-          input.downstream_difficulty_config.min_individual_miner_hashrate * 1e12,
+      // Fixed values
+      log_file: './jd-server.log',
+      listen_jd_address: '0.0.0.0:34264',
+      // Convert interval to proper format
+      mempool_update_interval: {
+        unit: 'secs' as const,
+        value: input.mempool_update_interval,
       },
     }
     await configToml.merge(effects, configData)

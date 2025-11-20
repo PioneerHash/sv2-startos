@@ -10,49 +10,41 @@ export const versionGraph = VersionGraph.of({
   preInstall: async (effects) => {
     ;(await Promise.all([
       configToml.write(effects, {
-        // Downstream Mining Device Connection
-        downstream_address: '0.0.0.0',
-        downstream_port: 34255,
+        // Full Template Mode
+        full_template_mode_required: false,
 
-        // Protocol Version Support
-        min_supported_version: 2,
-        max_supported_version: 2,
+        // Authority Keys (placeholder values - user must configure)
+        authority_public_key: 'CHANGE_ME_authority_public_key',
+        authority_secret_key: 'CHANGE_ME_authority_secret_key',
+        cert_validity_sec: 3600,
 
-        // Extranonce Configuration
-        downstream_extranonce2_size: 4,
+        // Coinbase Configuration (placeholder - user must configure)
+        coinbase_reward_script: 'CHANGE_ME_bitcoin_address_descriptor',
 
-        // User Identity
-        user_identity: 'start9',
+        // Fixed Log File
+        log_file: './jd-server.log',
 
-        // Channel Aggregation
-        aggregate_channels: true,
+        // Fixed JD Address
+        listen_jd_address: '0.0.0.0:34264',
 
-        // Log File
-        log_file: './tproxy.log',
+        // Bitcoin Core RPC Configuration (default to local bitcoind)
+        core_rpc_url: 'http://bitcoind.embassy:8332',
+        core_rpc_port: 8332,
+        core_rpc_user: 'CHANGE_ME_rpc_username',
+        core_rpc_pass: 'CHANGE_ME_rpc_password',
 
-        // Downstream Difficulty Configuration
-        downstream_difficulty_config: {
-          min_individual_miner_hashrate: 10000000000000,
-          shares_per_minute: 6.0,
-          enable_vardiff: true,
+        // Mempool Update Interval
+        mempool_update_interval: {
+          unit: 'secs',
+          value: 30,
         },
-
-        // Upstream SV2 Pool/JDC Connections
-        upstreams: [
-          {
-            address: '75.119.150.111',
-            port: 34254,
-            authority_pubkey:
-              '9auqWEzQDVyd2oe1JVGFLMLHZtCo2FFqZwtKA5gd9xbuEu7PH72',
-          },
-        ],
       }),
     ]),
       // critical - needs to be done before start
       // important - dismissible
       // optional - less in the user's face
       await sdk.action.createOwnTask(effects, setConfig, 'critical', {
-        reason: 'Configure your SV2 Translator Proxy settings',
+        reason: 'Configure your Job Declaration Server settings',
       }))
   },
 })
