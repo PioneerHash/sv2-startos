@@ -7,9 +7,9 @@ WORKDIR /build
 # Copy the sv2-apps source
 COPY sv2-apps ./sv2-apps
 
-# Build the translator from the workspace
+# Build the jd-client from the workspace
 WORKDIR /build/sv2-apps/miner-apps
-RUN cargo build --release --package translator_sv2
+RUN cargo build --release --package jd_client
 
 # Stage 2: Create minimal runtime image
 FROM debian:bookworm-slim
@@ -18,10 +18,10 @@ FROM debian:bookworm-slim
 RUN mkdir -p /app/config /app/data
 
 # Copy the binary from builder
-COPY --from=builder /build/sv2-apps/miner-apps/target/release/translator_sv2 /usr/local/bin/translator_sv2
+COPY --from=builder /build/sv2-apps/miner-apps/target/release/jd_client /usr/local/bin/jd_client
 
 # Copy config examples for reference
-COPY --from=builder /build/sv2-apps/miner-apps/translator/config-examples /app/config-examples
+COPY --from=builder /build/sv2-apps/miner-apps/jd-client/config-examples /app/config-examples
 
 # Copy entrypoint script
 COPY docker-entrypoint.sh /usr/local/bin/
@@ -36,4 +36,4 @@ EXPOSE 34255
 
 # Entrypoint and default command (will be overridden by StartOS)
 ENTRYPOINT ["docker-entrypoint.sh"]
-CMD ["/app/config/tproxy-config.toml"]
+CMD ["/app/config/jdc-config.toml"]
