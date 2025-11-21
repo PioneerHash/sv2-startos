@@ -117,7 +117,7 @@ check-init:
 # Internal target to build a single service
 .PHONY: build-service
 build-service:
-	@if [ -d sv2-apps ] && [ ! -d $(SERVICE)/sv2-apps ]; then echo "   Copying sv2-apps..."; cp -r sv2-apps $(SERVICE)/; fi
+	@if [ -d sv2-apps ] && [ ! -d $(SERVICE)/sv2-apps ] && [ "$(SERVICE)" != "template-provider" ]; then echo "   Copying sv2-apps..."; cp -r sv2-apps $(SERVICE)/; fi
 	@PACKAGE_ID=$$(awk -F"'" '/id:/ {print $$2}' $(SERVICE)/startos/manifest.ts); \
 	BUILD=universal; \
 	S9PK=$(SERVICE)/$${PACKAGE_ID}.s9pk; \
