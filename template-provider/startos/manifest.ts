@@ -7,23 +7,22 @@ const architectures =
   BUILD === 'x86_64' || BUILD === 'aarch64' ? [BUILD] : ['x86_64', 'aarch64']
 
 export const manifest = setupManifest({
-  id: 'sv2-tproxy',
-  title: 'Pioneer Hash TProxy',
-  license: 'MIT OR Apache-2.0',
-  wrapperRepo: 'https://github.com/PioneerHash/sv2-translator-startos',
-  upstreamRepo: 'https://github.com/stratum-mining/sv2-apps',
+  id: 'sv2-template-provider',
+  title: 'SV2 Template Provider',
+  license: 'MIT',
+  wrapperRepo: 'https://github.com/Start9Labs/sv2-startos',
+  upstreamRepo: 'https://github.com/stratum-mining/sv2-tp',
   supportSite: 'https://stratumprotocol.org',
   marketingSite: 'https://stratumprotocol.org',
   donationUrl: 'https://opensats.org/projects/stratumv2',
-  docsUrl:
-    'https://github.com/stratum-mining/sv2-apps/blob/main/miner-apps/translator/README.md',
+  docsUrl: 'https://stratumprotocol.org/docs/',
   description: {
-    short: 'Pioneer Hash SV2 Translation Proxy',
-    long: 'Pioneer Hash TProxy provides Stratum V2 (SV2) protocol translation services for SV1 mining devices, enabling enhanced efficiency, security, and flexibility for Bitcoin mining operations.',
+    short: 'SV2 Template Provider for Bitcoin mining',
+    long: 'Template Provider connects to Bitcoin Core via IPC to generate and serve block templates to SV2 mining pools using the Template Distribution Protocol. It provides mining pools with up-to-date block templates for efficient mining operations.',
   },
   volumes: ['main'],
   images: {
-    'sv2-tproxy': {
+    'sv2-template-provider': {
       source: {
         dockerBuild: {
           dockerfile: 'Dockerfile',
@@ -44,5 +43,6 @@ export const manifest = setupManifest({
     start: null,
     stop: null,
   },
+  // Dependencies will be configured once bitcoin-core exposes the IPC volume
   dependencies: {},
 })

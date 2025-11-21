@@ -1,117 +1,63 @@
 import { sdk } from '../sdk'
-import { configToml } from '../fileModels/config.toml'
+import { sv2TpConfFile } from '../fileModels/sv2-tp.conf'
 
-const { InputSpec, Value, List } = sdk
-
-const upstreamSpec = InputSpec.of({
-  address: Value.text({
-    name: 'Pool Address',
-    description: 'IP address or hostname of the upstream SV2 pool',
-    required: true,
-    default: '75.119.150.111',
-    placeholder: '75.119.150.111',
-  }),
-  port: Value.number({
-    name: 'Pool Port',
-    description:
-      'Port number for the upstream SV2 pool (typically 34254 for pool, 34265 for JDC)',
-    required: true,
-    default: 34254,
-    min: 1,
-    max: 65535,
-    integer: true,
-  }),
-  authority_pubkey: Value.text({
-    name: 'Authority Public Key',
-    description: 'The authority public key of the upstream SV2 pool',
-    required: true,
-    default: '9auqWEzQDVyd2oe1JVGFLMLHZtCo2FFqZwtKA5gd9xbuEu7PH72',
-    placeholder: '9auqWEzQDVyd2oe1JVGFLMLHZtCo2FFqZwtKA5gd9xbuEu7PH72',
-  }),
-})
+const { InputSpec, Value } = sdk
 
 export const inputSpec = InputSpec.of({
-  // User Identity
-  user_identity: Value.text({
-    name: 'User Identity / Username',
-    description:
-      'Username for pool connection. Will be appended with a counter for each mining client (e.g., username.miner1, username.miner2)',
-    required: true,
-    default: 'start9',
-    placeholder: 'start9',
+  // Network Chain
+  chain: Value.select({
+    name: 'Bitcoin Network',
+    description: 'Bitcoin network chain to operate on',
+    default: 'main',
+    values: {
+      main: 'Mainnet',
+      test: 'Testnet',
+      signet: 'Signet',
+      regtest: 'Regtest',
+    },
   }),
 
-  // Extranonce Configuration
-  downstream_extranonce2_size: Value.number({
-    name: 'Downstream Extranonce2 Size',
+  // Template Update Interval
+  sv2interval: Value.number({
+    name: 'Template Update Interval (seconds)',
     description:
-      'Extranonce2 size for downstream connections. Controls the rollable part of the extranonce for downstream SV1 miners (Max for CGminer: 8, Min: 2)',
+      'How often to check for new templates and send updates to pools',
     required: true,
-    default: 4,
-    min: 2,
-    max: 16,
+    default: 30,
+    min: 1,
+    max: 300,
     integer: true,
   }),
 
-  // Channel Aggregation
-  aggregate_channels: Value.toggle({
-    name: 'Aggregate Channels',
+  // Fee Delta
+  sv2feedelta: Value.number({
+    name: 'Fee Delta (satoshis)',
     description:
-      'If enabled, all miners share one upstream channel. If disabled, each miner gets its own channel',
-    default: true,
+      'Minimum fee difference in satoshis required to trigger a new template',
+    required: true,
+    default: 1000,
+    min: 0,
+    max: 1000000,
+    integer: true,
   }),
 
-  // Downstream Difficulty Configuration
-  downstream_difficulty_config: Value.object(
-    {
-      name: 'Downstream Difficulty Settings',
-      description: 'Difficulty settings for mining devices',
-    },
-    InputSpec.of({
-      min_individual_miner_hashrate: Value.number({
-        name: 'Minimum Miner Hashrate (TH/s)',
-        description:
-          'Hashrate of the weakest miner in terahashes per second (e.g., 10 TH/s)',
-        required: true,
-        default: 10,
-        min: 0.001,
-        max: 10000,
-        integer: false,
-      }),
-      shares_per_minute: Value.number({
-        name: 'Target Shares Per Minute',
-        description:
-          'Target number of shares per minute each miner should submit',
-        required: true,
-        default: 6.0,
-        min: 0.1,
-        max: 60,
-        integer: false,
-      }),
-      enable_vardiff: Value.toggle({
-        name: 'Enable Variable Difficulty',
-        description:
-          'Enable variable difficulty adjustment (set to false when using with Job Declarator Client)',
-        default: true,
-      }),
-    }),
-  ),
+  // Logging Settings
+  debug: Value.text({
+    name: 'Debug Categories',
+    description:
+      'Comma-separated debug categories (e.g., "sv2,ipc" or "all")',
+    required: true,
+    default: 'sv2',
+    placeholder: 'sv2,ipc',
+  }),
 
-  // Upstream SV2 Pool/JDC Connections
-  upstreams: Value.list(
-    List.obj(
-      {
-        name: 'Upstream Pools',
-        description:
-          'SV2 pool connections (add multiple for failover support). The first pool will be used as primary, others as backups',
-      },
-      {
-        spec: upstreamSpec,
-        displayAs: '{{address}}:{{port}}',
-        uniqueBy: 'address',
-      },
-    ),
-  ),
+  loglevel: Value.text({
+    name: 'Log Level',
+    description: 'Log level for sv2 category (e.g., "sv2:trace", "sv2:debug")',
+    required: true,
+    default: 'sv2:debug',
+    placeholder: 'sv2:debug',
+  }),
 })
 
 export const setConfig = sdk.Action.withInput(
@@ -120,9 +66,9 @@ export const setConfig = sdk.Action.withInput(
 
   // metadata
   async ({ effects }) => ({
-    name: 'Configure Translator',
+    name: 'Configure Template Provider',
     description:
-      'Configure SV2 Translator Proxy settings for pool and mining device connections',
+      'Configure SV2 Template Provider settings for Bitcoin Core IPC connection and template generation',
     warning: null,
     allowedStatuses: 'any',
     group: null,
@@ -134,32 +80,28 @@ export const setConfig = sdk.Action.withInput(
 
   // optionally pre-fill the input form
   async ({ effects }) => {
-    const config = await configToml.read().const(effects)
-    if (!config) {
+    const conf = await sv2TpConfFile.read().const(effects)
+    if (!conf) {
       return null
     }
-    // Convert H/s to TH/s for display
+    // Return only the fields that are in inputSpec (exclude ipcconnect)
+    // Cast chain to the correct type
+    const chain = conf.chain as 'main' | 'test' | 'signet' | 'regtest'
     return {
-      ...config,
-      downstream_difficulty_config: {
-        ...config.downstream_difficulty_config,
-        min_individual_miner_hashrate:
-          config.downstream_difficulty_config.min_individual_miner_hashrate / 1e12,
-      },
+      chain,
+      sv2interval: conf.sv2interval,
+      sv2feedelta: conf.sv2feedelta,
+      debug: conf.debug,
+      loglevel: conf.loglevel,
     }
   },
 
   // the execution function
   async ({ effects, input }) => {
-    // Convert TH/s to H/s for storage
-    const configData = {
+    // Write directly to sv2-tp.conf - SDK handles the .conf format
+    await sv2TpConfFile.merge(effects, {
       ...input,
-      downstream_difficulty_config: {
-        ...input.downstream_difficulty_config,
-        min_individual_miner_hashrate:
-          input.downstream_difficulty_config.min_individual_miner_hashrate * 1e12,
-      },
-    }
-    await configToml.merge(effects, configData)
+      ipcconnect: 'unix', // Always unix for IPC socket
+    })
   },
 )
