@@ -15,7 +15,7 @@ export const main = sdk.setupMain(async ({ effects, started }) => {
   // Validate critical configuration fields before starting
   const defaultTestnetAddress = 'addr(tb1qa0sm0hxzj0x25rh8gw5xlzwlsfvvyz8u96w3p8)'
 
-  if (!config.coinbase_reward_script || config.coinbase_reward_script === defaultTestnetAddress) {
+  if (!config || !config.coinbase_reward_script || config.coinbase_reward_script === defaultTestnetAddress) {
     throw new Error(
       'Configuration Required: You must configure a Bitcoin address for mining rewards. ' +
       'The default testnet address cannot be used. ' +

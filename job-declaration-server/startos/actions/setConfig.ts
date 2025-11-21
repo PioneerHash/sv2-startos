@@ -17,6 +17,7 @@ export const inputSpec = InputSpec.of({
     name: 'Authority Public Key',
     description: 'Authority public key for the Job Declaration Server',
     required: true,
+    default: '9auqWEzQDVyd2oe1JVGFLMLHZtCo2FFqZwtKA5gd9xbuEu7PH72',
     placeholder: 'Enter authority public key',
   }),
 
@@ -24,6 +25,7 @@ export const inputSpec = InputSpec.of({
     name: 'Authority Secret Key',
     description: 'Authority secret key for the Job Declaration Server',
     required: true,
+    default: 'mkDLTBBRxdBv998612qipDYoTK3YUrqLe8uWw7gu3iXbSrn2n',
     placeholder: 'Enter authority secret key',
     masked: true,
   }),
@@ -44,6 +46,7 @@ export const inputSpec = InputSpec.of({
     description:
       'Bitcoin address descriptor for coinbase rewards (e.g., wpkh([fingerprint/derivation]xpub...))',
     required: true,
+    default: 'addr(tb1qa0sm0hxzj0x25rh8gw5xlzwlsfvvyz8u96w3p8)',
     placeholder: 'Enter Bitcoin address descriptor',
   }),
 
@@ -70,6 +73,7 @@ export const inputSpec = InputSpec.of({
     name: 'Bitcoin Core RPC Username',
     description: 'Username for Bitcoin Core RPC authentication',
     required: true,
+    default: 'bitcoin',
     placeholder: 'Enter RPC username',
   }),
 
@@ -77,6 +81,7 @@ export const inputSpec = InputSpec.of({
     name: 'Bitcoin Core RPC Password',
     description: 'Password for Bitcoin Core RPC authentication',
     required: true,
+    default: 'password',
     placeholder: 'Enter RPC password',
     masked: true,
   }),
@@ -130,8 +135,8 @@ export const setConfig = sdk.Action.withInput(
     const configData = {
       ...input,
       // Fixed values
-      log_file: './jd-server.log',
-      listen_jd_address: '0.0.0.0:34264',
+      log_file: './jd-server.log' as const,
+      listen_jd_address: '0.0.0.0:34264' as const,
       // Convert interval to proper format
       mempool_update_interval: {
         unit: 'secs' as const,

@@ -207,6 +207,8 @@ export const setConfig = sdk.Action.withInput(
 
       // User-configurable values
       ...input,
+      // Convert empty/null string to empty string for tp_authority_public_key (it's optional in practice)
+      tp_authority_public_key: input.tp_authority_public_key || '',
     }
     await configToml.merge(effects, configData)
   },

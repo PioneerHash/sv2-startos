@@ -140,13 +140,11 @@ export const setConfig = sdk.Action.withInput(
     // Transform the user-friendly address input into the Bitcoin descriptor format
     // Users enter just the address (e.g., "bc1q..."), we wrap it with addr() for storage
     // This is stored as coinbase_reward_script in the config file
+    const { coinbase_reward_address, ...restInput } = input
     const configData = {
-      ...input,
-      coinbase_reward_script: `addr(${input.coinbase_reward_address})`,
+      ...restInput,
+      coinbase_reward_script: `addr(${coinbase_reward_address})`,
     }
-
-    // Remove the temporary UI field that doesn't exist in the config file
-    delete configData.coinbase_reward_address
 
     await configToml.merge(effects, configData)
   },

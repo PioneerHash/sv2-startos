@@ -21,7 +21,7 @@ RUN mkdir -p /app/config /app/data
 COPY --from=builder /build/sv2-apps/pool-apps/target/release/pool_sv2 /usr/local/bin/pool_sv2
 
 # Copy config examples for reference
-COPY sv2-apps/pool-apps/pool/config-examples /app/config-examples
+COPY --from=builder /build/sv2-apps/pool-apps/pool/config-examples /app/config-examples
 
 # Copy entrypoint script
 COPY docker-entrypoint.sh /usr/local/bin/

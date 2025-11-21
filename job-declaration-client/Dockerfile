@@ -21,7 +21,7 @@ RUN mkdir -p /app/config /app/data
 COPY --from=builder /build/sv2-apps/miner-apps/target/release/translator_sv2 /usr/local/bin/translator_sv2
 
 # Copy config examples for reference
-COPY sv2-apps/miner-apps/translator/config-examples /app/config-examples
+COPY --from=builder /build/sv2-apps/miner-apps/translator/config-examples /app/config-examples
 
 # Copy entrypoint script
 COPY docker-entrypoint.sh /usr/local/bin/

@@ -18,6 +18,9 @@ export const versionGraph = VersionGraph.of({
         // Certificate validity duration (1 hour default)
         cert_validity_sec: 3600,
 
+        // Test-only plain connection (optional, for development/testing)
+        test_only_listen_adress_plain: '',
+
         // Listen address for downstream connections (translators/proxies)
         listen_address: '0.0.0.0:34254',
 

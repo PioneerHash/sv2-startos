@@ -1,5 +1,5 @@
 import { matches, FileHelper } from '@start9labs/start-sdk'
-const { object, string, number, literal, optional } = matches
+const { object, string, number, literal } = matches
 
 const shape = object({
   // Pool Authority Keys
@@ -10,7 +10,7 @@ const shape = object({
   cert_validity_sec: number,
 
   // Test-only plain connection (optional, for development/testing)
-  test_only_listen_adress_plain: optional(string),
+  test_only_listen_adress_plain: string,
 
   // Listen address for downstream connections (translators/proxies)
   // We don't want people changing the listen address
@@ -31,7 +31,7 @@ const shape = object({
   // Template Provider Configuration
   tp_address: string,
   // Optional: only needed for remote/hosted Template Providers
-  tp_authority_public_key: optional(string),
+  tp_authority_public_key: string,
 
   // Shares configuration
   shares_per_minute: number,
