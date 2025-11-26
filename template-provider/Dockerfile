@@ -36,10 +36,11 @@ RUN apt-get update && apt-get install -y \
     libboost-thread1.74.0 \
     libevent-2.1-7 \
     ca-certificates \
+    libcapnp-1.0.1 \
     && rm -rf /var/lib/apt/lists/*
 
-# Create app directories
-RUN mkdir -p /app/data /mnt/bitcoind/ipc
+# Create app directories and IPC mount point
+RUN mkdir -p /app/data /ipc
 
 # Copy the sv2-tp binary from builder
 COPY --from=builder /build/sv2-tp/build/bin/sv2-tp /usr/local/bin/sv2-tp

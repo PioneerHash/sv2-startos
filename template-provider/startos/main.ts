@@ -33,14 +33,6 @@ export const main = sdk.setupMain(async ({ effects, started }) => {
         mountpoint: '/data',
         readonly: false,
       }),
-      // TODO: Mount Bitcoin Core IPC socket once it's exposed in bitcoin-core-startos
-      // .bind({
-      //   packageId: 'bitcoin-core',
-      //   volumeId: 'ipc',
-      //   subpath: null,
-      //   mountpoint: '/mnt/bitcoind/ipc',
-      //   readonly: true,
-      // }),
       'sv2-template-provider-sub',
     ),
     exec: {

@@ -43,6 +43,5 @@ export const manifest = setupManifest({
     start: null,
     stop: null,
   },
-  // Dependencies will be configured once bitcoin-core exposes the IPC volume
   dependencies: {},
 })
