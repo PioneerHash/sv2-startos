@@ -10,6 +10,7 @@ export const sv2TpConfDefaults = {
   sv2feedelta: 1000,
   debug: 'sv2',
   loglevel: 'sv2:debug',
+  testnet4Mode: false,
 }
 
 // Schema for sv2-tp.conf file
@@ -32,6 +33,9 @@ export const shape = object({
 
   // Log level (e.g., 'sv2:trace', 'sv2:debug')
   loglevel: string.onMismatch(sv2TpConfDefaults.loglevel),
+
+  // Testnet4 mode toggle (internal use only, not exposed in config UI)
+  testnet4Mode: matches.boolean.onMismatch(sv2TpConfDefaults.testnet4Mode),
 }).onMismatch(sv2TpConfDefaults)
 
 // FileHelper.ini handles .conf files (key=value format) directly

@@ -8,13 +8,12 @@ export const versionGraph = VersionGraph.of({
   current,
   other,
   preInstall: async (effects) => {
-    ;(await Promise.all([
-      // Write default sv2-tp.conf - SDK handles .conf format
-      sv2TpConfFile.write(effects, sv2TpConfDefaults),
-    ]),
-      // critical - needs to be done before start
-      await sdk.action.createOwnTask(effects, setConfig, 'critical', {
-        reason: 'Configure your Template Provider settings',
-      }))
+    // Write default sv2-tp.conf - SDK handles .conf format
+    await sv2TpConfFile.write(effects, sv2TpConfDefaults)
+
+    // Create critical task - needs to be done before start
+    await sdk.action.createOwnTask(effects, setConfig, 'critical', {
+      reason: 'Configure your Template Provider settings',
+    })
   },
 })

@@ -20,7 +20,7 @@ export const manifest = setupManifest({
     short: 'SV2 Template Provider for Bitcoin mining',
     long: 'Template Provider connects to Bitcoin Core via IPC to generate and serve block templates to SV2 mining pools using the Template Distribution Protocol. It provides mining pools with up-to-date block templates for efficient mining operations.',
   },
-  volumes: ['main'],
+  volumes: ['main', 'ipc'],
   images: {
     'sv2-template-provider': {
       source: {

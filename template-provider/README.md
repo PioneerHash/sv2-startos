@@ -2,15 +2,15 @@
   <img src="icon.png" alt="Project Logo" width="21%">
 </p>
 
-# Pioneer Hash TProxy for StartOS
+# SV2 Template Provider for StartOS
 
-Pioneer Hash TProxy is a StartOS service package for the Stratum V2 (SV2) Translation Proxy, enabling SV1 mining device connectivity with SV2 pools.
+SV2 Template Provider is a StartOS service package that connects to Bitcoin Core via IPC to generate and serve block templates to SV2 mining pools using the Template Distribution Protocol.
 
 ## Setup
 
 Follow the StartOS documentation [guides](https://docs.start9.com/packaging-guide/environment-setup.html) to set up your development environment.
 
-The service uses the [sv2-apps](https://github.com/stratum-mining/sv2-apps) repository as a submodule for the Translator implementation.
+The service uses the [sv2-tp](https://github.com/bitcoin/bitcoin) Template Provider implementation as a submodule.
 
 ## Building
 
@@ -20,11 +20,19 @@ make
 
 ## Configuration
 
-Pioneer Hash TProxy requires configuration to connect to an upstream SV2 pool. Configuration options include:
+SV2 Template Provider requires a Bitcoin Core node with IPC enabled. Configuration options include:
 
-- Upstream SV2 pool address and port
-- Upstream pool authority public key
-- Downstream listening address and port (default: 34255)
-- Difficulty parameters for both upstream and downstream connections
+- **Testnet4 Mode**: Toggle to connect to Bitcoin Core Testnet4 instead of mainnet
+- **Bitcoin Network**: Select the chain (mainnet, testnet, signet, regtest)
+- **Template Update Interval**: How often to check for new templates (seconds)
+- **Fee Delta**: Minimum fee difference to trigger a new template (satoshis)
+- **Debug Categories**: Logging categories (e.g., "sv2,ipc")
+- **Log Level**: Verbosity level (e.g., "sv2:debug")
 
-See the [Translator documentation](https://github.com/stratum-mining/sv2-apps/blob/main/miner-apps/translator/README.md) for detailed configuration options.
+## Dependencies
+
+The Template Provider requires either:
+- **Bitcoin Core** (bitcoind) for mainnet operation, or
+- **Bitcoin Core Testnet4** (bitcoind-testnet4) for testnet4 operation
+
+The dependency is automatically configured based on the Testnet4 Mode setting. The service binds to the Bitcoin Core IPC volume for high-performance communication.

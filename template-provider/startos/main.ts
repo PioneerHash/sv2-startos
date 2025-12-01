@@ -1,5 +1,6 @@
 import { sv2TpConfFile } from './fileModels/sv2-tp.conf'
 import { sdk } from './sdk'
+import { TEMPLATE_PROVIDER_PORT } from './utils'
 
 export const main = sdk.setupMain(async ({ effects, started }) => {
   /**
@@ -27,12 +28,19 @@ export const main = sdk.setupMain(async ({ effects, started }) => {
     subcontainer: await sdk.SubContainer.of(
       effects,
       { imageId: 'sv2-template-provider' },
-      sdk.Mounts.of().mountVolume({
-        volumeId: 'main',
-        subpath: null,
-        mountpoint: '/data',
-        readonly: false,
-      }),
+      sdk.Mounts.of()
+        .mountVolume({
+          volumeId: 'main',
+          subpath: null,
+          mountpoint: '/data',
+          readonly: false,
+        })
+        .mountVolume({
+          volumeId: 'ipc',
+          subpath: null,
+          mountpoint: '/ipc',
+          readonly: true,
+        }),
       'sv2-template-provider-sub',
     ),
     exec: {
@@ -43,7 +51,7 @@ export const main = sdk.setupMain(async ({ effects, started }) => {
     ready: {
       display: 'SV2 Template Provider Service',
       fn: () =>
-        sdk.healthCheck.checkPortListening(effects, 8442, {
+        sdk.healthCheck.checkPortListening(effects, TEMPLATE_PROVIDER_PORT, {
           successMessage:
             'Template Provider is serving block templates to pools',
           errorMessage: 'Template Provider is not ready',

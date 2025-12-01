@@ -12,6 +12,9 @@ RUN apt-get update && apt-get install -y \
     libboost-thread-dev \
     libevent-dev \
     pkg-config \
+    capnproto \
+    libcapnp-dev \
+    python3 \
     && rm -rf /var/lib/apt/lists/*
 
 # Set working directory
@@ -36,7 +39,7 @@ RUN apt-get update && apt-get install -y \
     libboost-thread1.74.0 \
     libevent-2.1-7 \
     ca-certificates \
-    libcapnp-1.0.1 \
+    libcapnp-0.9.2 \
     && rm -rf /var/lib/apt/lists/*
 
 # Create app directories and IPC mount point
