@@ -20,7 +20,7 @@ export const manifest = setupManifest({
     short: 'SV2 Template Provider for Bitcoin mining',
     long: 'Template Provider connects to Bitcoin Core via IPC to generate and serve block templates to SV2 mining pools using the Template Distribution Protocol. It provides mining pools with up-to-date block templates for efficient mining operations.',
   },
-  volumes: ['main', 'ipc'],
+  volumes: ['main'],
   images: {
     'sv2-template-provider': {
       source: {
@@ -36,12 +36,27 @@ export const manifest = setupManifest({
     arch: architectures,
   },
   alerts: {
-    install: null,
-    update: null,
+    install:
+      'IMPORTANT: This service requires Bitcoin Core v30.0 or higher with IPC enabled. Please ensure you have Bitcoin Core installed and configured with IPC before starting this service. Configure your Template Provider settings in the Config menu.',
+    update:
+      'Template Provider has been updated. Review your configuration settings and ensure Bitcoin Core v30+ with IPC is running.',
     uninstall: null,
-    restore: null,
-    start: null,
+    restore:
+      'Template Provider has been restored from backup. Verify your Bitcoin Core IPC connection is configured correctly.',
+    start:
+      'Starting Template Provider. Ensure Bitcoin Core v30+ with IPC is running.',
     stop: null,
   },
-  dependencies: {},
+  dependencies: {
+    bitcoind: {
+      description: 'Bitcoin Core is required for mainnet template generation',
+      optional: true,
+      s9pk: null,
+    },
+    'bitcoind-testnet4': {
+      description: 'Bitcoin Core Testnet4 is required for testnet4 template generation',
+      optional: true,
+      s9pk: null,
+    },
+  },
 })

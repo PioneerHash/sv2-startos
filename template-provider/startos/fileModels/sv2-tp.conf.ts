@@ -5,12 +5,10 @@ const { object, string, number, literal } = matches
 // sv2-tp.conf defaults
 export const sv2TpConfDefaults = {
   chain: 'main',
-  ipcconnect: 'unix:../ipc/bitcoin-core.sock' as const,
+  ipcconnect: 'unix:/ipc/bitcoin-core.sock' as const,
   sv2interval: 30,
   sv2feedelta: 1000,
-  debug: 'sv2',
-  loglevel: 'sv2:debug',
-  testnet4Mode: false,
+  loglevel: 'sv2:info',
 }
 
 // Schema for sv2-tp.conf file
@@ -28,14 +26,8 @@ export const shape = object({
   // Fee delta in satoshis for template generation
   sv2feedelta: number.onMismatch(sv2TpConfDefaults.sv2feedelta),
 
-  // Debug categories (e.g., 'sv2', 'ipc')
-  debug: string.onMismatch(sv2TpConfDefaults.debug),
-
-  // Log level (e.g., 'sv2:trace', 'sv2:debug')
+  // Log level (e.g., 'sv2:trace', 'sv2:debug', 'sv2:info')
   loglevel: string.onMismatch(sv2TpConfDefaults.loglevel),
-
-  // Testnet4 mode toggle (internal use only, not exposed in config UI)
-  testnet4Mode: matches.boolean.onMismatch(sv2TpConfDefaults.testnet4Mode),
 }).onMismatch(sv2TpConfDefaults)
 
 // FileHelper.ini handles .conf files (key=value format) directly

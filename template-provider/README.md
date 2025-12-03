@@ -31,8 +31,19 @@ SV2 Template Provider requires a Bitcoin Core node with IPC enabled. Configurati
 
 ## Dependencies
 
-The Template Provider requires either:
-- **Bitcoin Core** (bitcoind) for mainnet operation, or
-- **Bitcoin Core Testnet4** (bitcoind-testnet4) for testnet4 operation
+### Required Bitcoin Core Version
 
-The dependency is automatically configured based on the Testnet4 Mode setting. The service binds to the Bitcoin Core IPC volume for high-performance communication.
+**CRITICAL:** This service requires **Bitcoin Core v30.0 or higher** with **IPC (Inter-Process Communication) enabled**.
+
+The Template Provider connects to Bitcoin Core via IPC socket to generate block templates. You must have one of the following installed:
+- **Bitcoin Core v30+** (bitcoind) for mainnet operation, or
+- **Bitcoin Core Testnet4 v30+** (bitcoind-testnet4) for testnet4 operation
+
+### Bitcoin Core IPC Configuration
+
+Bitcoin Core must be configured with IPC enabled. Verify your Bitcoin Core configuration includes:
+- IPC socket enabled and accessible
+- IPC socket path available at the mounted `/ipc` volume
+- Sufficient permissions for socket communication
+
+The service automatically selects the appropriate Bitcoin Core instance based on the **Testnet4 Mode** configuration setting.
