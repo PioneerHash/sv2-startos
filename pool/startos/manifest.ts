@@ -37,12 +37,33 @@ export const manifest = setupManifest({
     arch: architectures,
   },
   alerts: {
-    install: null,
+    install:
+      'IMPORTANT: Configure the Pool in the Config menu to select your template provider source (Local Template Provider, Remote Template Provider, or Bitcoin Core IPC) and set your mining reward address before starting.',
     update: null,
     uninstall: null,
     restore: null,
-    start: null,
+    start:
+      'Starting Pool. Ensure your selected template provider is configured and running.',
     stop: null,
   },
-  dependencies: {},
+  dependencies: {
+    'sv2-template-provider': {
+      description:
+        'Local Template Provider for block template generation via SV2 protocol. Alternative to direct Bitcoin Core connection or remote Template Provider.',
+      optional: true,
+      s9pk: null,
+    },
+    bitcoind: {
+      description:
+        'Bitcoin Core (mainnet) for direct IPC connection. Alternative to Template Provider.',
+      optional: true,
+      s9pk: null,
+    },
+    'bitcoind-testnet4': {
+      description:
+        'Bitcoin Core (testnet4) for direct IPC connection. Alternative to Template Provider.',
+      optional: true,
+      s9pk: null,
+    },
+  },
 })
