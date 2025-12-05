@@ -103,18 +103,9 @@ export const inputSpec = InputSpec.of({
     variants: Variants.of({
       'local-sv2-tp': {
         name: 'Local SV2 Template Provider',
-        spec: InputSpec.of({
-          info: Value.textarea({
-            name: 'Information',
-            required: false,
-            default:
-              'The pool will connect to the SV2 Template Provider service running on this StartOS device.\n\nRequirements:\n• SV2 Template Provider must be installed\n• Template Provider must be configured and running\n\nConnection details will be automatically retrieved.',
-            description: 'Configuration is automatic',
-            immutable: true,
-            minRows: 6,
-            maxRows: 6,
-          }),
-        }),
+        description:
+          'Automatically connects to the SV2 Template Provider service running on this StartOS. Connection details are retrieved automatically. Requires: SV2 Template Provider service installed and running.',
+        spec: InputSpec.of({}),
       },
       'remote-sv2-tp': {
         name: 'Remote SV2 Template Provider',
@@ -145,6 +136,8 @@ export const inputSpec = InputSpec.of({
       },
       'bitcoin-core-ipc': {
         name: 'Bitcoin Core IPC',
+        description:
+          'Connect directly to Bitcoin Core via IPC socket. CRITICAL: Bitcoin Core v30.0+ with IPC enabled (ipcbind setting) is required. Pool will validate IPC availability on startup and fail if not enabled.',
         spec: InputSpec.of({
           network: Value.select({
             name: 'Bitcoin Network',
@@ -175,16 +168,6 @@ export const inputSpec = InputSpec.of({
             min: 1,
             max: 60,
             units: 'seconds',
-          }),
-          info: Value.textarea({
-            name: 'Requirements',
-            required: false,
-            default:
-              'Pool will connect directly to Bitcoin Core via IPC.\n\nCRITICAL REQUIREMENTS:\n• Bitcoin Core v30.0 or higher must be installed\n• Bitcoin Core MUST have IPC enabled (ipcbind setting)\n• If IPC is disabled in Bitcoin Core, Pool will fail to start\n\nThe pool will automatically validate IPC availability on startup.',
-            description: 'Bitcoin Core IPC requirements',
-            immutable: true,
-            minRows: 7,
-            maxRows: 7,
           }),
         }),
       },
@@ -250,14 +233,11 @@ export const setConfig = sdk.Action.withInput(
           network: config.bitcoin_network || 'mainnet',
           fee_threshold: config.bitcoin_fee_threshold || 100,
           min_interval: config.bitcoin_min_interval || 5,
-          info: '', // read-only field
         }
         break
       case 'local-sv2-tp':
       default:
-        templateProvider.value = {
-          info: '', // read-only field
-        }
+        templateProvider.value = {} // Empty - no fields needed
         break
     }
 

@@ -12,7 +12,7 @@ export const main = sdk.setupMain(async ({ effects, started }) => {
 
   // Create network-specific data directories (after volume is mounted)
   // sv2-tp uses subdirectories like Bitcoin Core (main, testnet4, signet, regtest)
-  const subcontainer = await sdk.SubContainer.of(
+  const initContainer = await sdk.SubContainer.of(
     effects,
     { imageId: 'sv2-template-provider' },
     sdk.Mounts.of().mountVolume({
@@ -24,8 +24,8 @@ export const main = sdk.setupMain(async ({ effects, started }) => {
     'sv2-template-provider-init',
   )
 
-  await subcontainer.exec(['mkdir', '-p', '/data/main', '/data/testnet4', '/data/signet', '/data/regtest'])
-  await subcontainer.destroy()
+  await initContainer.exec(['mkdir', '-p', '/data/main', '/data/testnet4', '/data/signet', '/data/regtest'])
+  await initContainer.destroy()
 
   // Read and watch the sv2-tp.conf for changes - will trigger restart if modified
   const conf = await sv2TpConfFile.read().const(effects)
@@ -46,26 +46,43 @@ export const main = sdk.setupMain(async ({ effects, started }) => {
    * Template Provider connects to Bitcoin Core via IPC to generate and serve
    * block templates to SV2 pools using the Template Distribution Protocol.
    */
-  return sdk.Daemons.of(effects, started).addDaemon('primary', {
-    subcontainer: await sdk.SubContainer.of(
-      effects,
-      { imageId: 'sv2-template-provider' },
-      sdk.Mounts.of()
-        .mountVolume({
-          volumeId: 'main',
-          subpath: null,
-          mountpoint: '/data',
-          readonly: false,
-        })
-        .mountDependency({
-          dependencyId: bitcoindServiceId,
-          volumeId: 'ipc',
-          subpath: null,
-          mountpoint: '/ipc',
-          readonly: true,
-        }),
-      'sv2-template-provider-sub',
-    ),
+  const subcontainer = await sdk.SubContainer.of(
+    effects,
+    { imageId: 'sv2-template-provider' },
+    sdk.Mounts.of()
+      .mountVolume({
+        volumeId: 'main',
+        subpath: null,
+        mountpoint: '/data',
+        readonly: false,
+      })
+      .mountDependency({
+        dependencyId: bitcoindServiceId,
+        volumeId: 'ipc',
+        subpath: null,
+        mountpoint: '/ipc',
+        readonly: true,
+      }),
+    'sv2-template-provider-sub',
+  )
+
+  // Validate IPC socket exists before starting
+  console.info('Validating Bitcoin Core IPC socket availability...')
+  const ipcSocketPath = conf.ipcconnect.replace('unix:', '')
+  const ipcCheck = await subcontainer.exec(['test', '-S', ipcSocketPath])
+
+  if (ipcCheck.exitCode !== 0) {
+    await subcontainer.destroy()
+    throw new Error(
+      `Bitcoin Core IPC socket not found at ${ipcSocketPath}. ` +
+        `Ensure Bitcoin Core (${bitcoindServiceId}) has IPC enabled in its configuration. ` +
+        `The 'ipcbind' option must be set in Bitcoin Core settings.`,
+    )
+  }
+  console.info('Bitcoin Core IPC socket validated successfully')
+
+  const daemons = sdk.Daemons.of(effects, started).addDaemon('primary', {
+    subcontainer,
     exec: {
       // sv2-tp reads the .conf file directly - SDK manages it
       // The .conf file is at /data/sv2-tp.conf (written by SDK)
@@ -89,4 +106,29 @@ export const main = sdk.setupMain(async ({ effects, started }) => {
     },
     requires: [],
   })
+
+  // Add continuous IPC health check
+  daemons.addHealthCheck('ipc-validation', {
+    ready: {
+      display: 'Bitcoin Core IPC Connection',
+      fn: async () => {
+        const ipcCheck = await subcontainer.exec(['test', '-S', ipcSocketPath])
+
+        if (ipcCheck.exitCode !== 0) {
+          return {
+            result: 'failure' as const,
+            message: `Bitcoin Core IPC socket not available at ${ipcSocketPath}. Check that Bitcoin Core has IPC enabled (ipcbind setting).`,
+          }
+        }
+
+        return {
+          result: 'success' as const,
+          message: 'Bitcoin Core IPC socket is available',
+        }
+      },
+    },
+    requires: ['primary'],
+  })
+
+  return daemons
 })
