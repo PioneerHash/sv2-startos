@@ -5,7 +5,7 @@ const { object, string, number, literal } = matches
 // sv2-tp.conf defaults
 export const sv2TpConfDefaults = {
   chain: 'main',
-  ipcconnect: 'unix:/ipc/node.sock' as const,
+  ipcconnect: 'unix:/.bitcoin/ipc/bitcoin-core.sock' as const,
   sv2interval: 30,
   sv2feedelta: 1000,
   loglevel: 'sv2:info',
@@ -17,7 +17,7 @@ export const shape = object({
   chain: string.onMismatch(sv2TpConfDefaults.chain),
 
   // IPC connection address - 'unix:<path>' for custom path
-  // Default path '/ipc/node.sock' connects to Bitcoin Core IPC socket (mounted from dependency)
+  // Default path '/.bitcoin/ipc/bitcoin-core.sock' connects to Bitcoin Core IPC socket (mounted from dependency)
   ipcconnect: string.onMismatch(sv2TpConfDefaults.ipcconnect),
 
   // Template update interval in seconds

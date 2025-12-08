@@ -12,19 +12,20 @@ export const main = sdk.setupMain(async ({ effects, started }) => {
 
   // Create network-specific data directories (after volume is mounted)
   // sv2-tp uses subdirectories like Bitcoin Core (main, testnet4, signet, regtest)
+  const rootDir = '/.sv2-tp'
   const initContainer = await sdk.SubContainer.of(
     effects,
     { imageId: 'sv2-template-provider' },
     sdk.Mounts.of().mountVolume({
       volumeId: 'main',
       subpath: null,
-      mountpoint: '/data',
+      mountpoint: rootDir,
       readonly: false,
     }),
     'sv2-template-provider-init',
   )
 
-  await initContainer.exec(['mkdir', '-p', '/data/main', '/data/testnet4', '/data/signet', '/data/regtest'])
+  await initContainer.exec(['mkdir', '-p', `${rootDir}/main`, `${rootDir}/testnet4`, `${rootDir}/signet`, `${rootDir}/regtest`])
   await initContainer.destroy()
 
   // Read and watch the sv2-tp.conf for changes - will trigger restart if modified
@@ -53,14 +54,14 @@ export const main = sdk.setupMain(async ({ effects, started }) => {
       .mountVolume({
         volumeId: 'main',
         subpath: null,
-        mountpoint: '/data',
+        mountpoint: rootDir,
         readonly: false,
       })
       .mountDependency({
         dependencyId: bitcoindServiceId,
-        volumeId: 'ipc',
-        subpath: null,
-        mountpoint: '/ipc',
+        volumeId: 'main',
+        subpath: 'ipc',
+        mountpoint: '/.bitcoin/ipc',
         readonly: true,
       }),
     'sv2-template-provider-sub',
@@ -85,12 +86,12 @@ export const main = sdk.setupMain(async ({ effects, started }) => {
     subcontainer,
     exec: {
       // sv2-tp reads the .conf file directly - SDK manages it
-      // The .conf file is at /data/sv2-tp.conf (written by SDK)
+      // The .conf file is at /.sv2-tp/sv2-tp.conf (written by SDK)
       // Use -debuglogfile=0 to disable file logging (StartOS captures stdout/stderr)
       command: [
         'sv2-tp',
-        '-conf=/data/sv2-tp.conf',
-        '-datadir=/data',
+        `-conf=${rootDir}/sv2-tp.conf`,
+        `-datadir=${rootDir}`,
         '-debuglogfile=0',
         '-printtoconsole=1',
       ],

@@ -77,8 +77,8 @@ export const setConfig = sdk.Action.withInput(
     // Note: sv2-tp uses 'testnet4' for testnet4, not 'test'
     const chain = input.testnet4Mode ? 'testnet4' : 'main'
 
-    // IPC path - absolute path to mounted IPC volume
-    const ipcPath = 'unix:/ipc/bitcoin-core.sock'
+    // IPC path - absolute path to mounted Bitcoin Core IPC socket
+    const ipcPath = 'unix:/.bitcoin/ipc/bitcoin-core.sock'
 
     // Hardcoded logging configuration (production defaults)
     const loglevel = 'sv2:info'
